@@ -3097,7 +3097,7 @@ mars_t* init(int argc, char** argv) {
 	return mars;
 }
 
-mars_t* init2(char* w1, char* w2, int coresize, int cycles, int maxprocess, int rounds, int maxwarriorlen) {
+mars_t* init2(char* w1, char* w2, int coresize, int cycles, int maxprocess, int rounds, int maxwarriorlen, int minsep) {
 	mars_t* mars = 0;
 	mars = (mars_t*)malloc(sizeof(mars_t));
 	memset(mars, 0, sizeof(mars_t));
@@ -3107,7 +3107,7 @@ mars_t* init2(char* w1, char* w2, int coresize, int cycles, int maxprocess, int 
 	mars->processes = maxprocess;
 	mars->maxWarriorLength = maxwarriorlen;
 	mars->seed = rng((s32_t)time(0)*0x1d872b41);
-	mars->minsep = maxwarriorlen;
+	mars->minsep = minsep;
 	mars->nWarriors = 2;
 	/* pmars */
 	mars->errorcode = SUCCESS;
@@ -3123,7 +3123,7 @@ mars_t* init2(char* w1, char* w2, int coresize, int cycles, int maxprocess, int 
 	return mars;
 }
 
-mars_t* init1(char* w1, int coresize, int cycles, int maxprocess, int rounds, int maxwarriorlen) {
+mars_t* init1(char* w1, int coresize, int cycles, int maxprocess, int rounds, int maxwarriorlen, int minsep) {
 	mars_t* mars = 0;
 	mars = (mars_t*)malloc(sizeof(mars_t));
 	memset(mars, 0, sizeof(mars_t));
@@ -3133,7 +3133,7 @@ mars_t* init1(char* w1, int coresize, int cycles, int maxprocess, int rounds, in
 	mars->processes = maxprocess;
 	mars->maxWarriorLength = maxwarriorlen;
 	mars->seed = rng((s32_t)time(0)*0x1d872b41);
-	mars->minsep = maxwarriorlen;
+	mars->minsep = minsep;
 	mars->nWarriors = 1;
 	/* pmars */
 	mars->errorcode = SUCCESS;
@@ -3202,15 +3202,17 @@ void pmars2exhaust(mars_t* mars, warrior_struct** warriors, int wCount)
 	}
 }
 
-void Fight2Warriors(char* w1, char* w2, int coresize, int cycles, int maxprocess, int rounds, int maxwarriorlen, int fixpos, int *win1, int *win2, int *equal)
+void Fight2Warriors(char* w1, char* w2, int coresize, int cycles, int maxprocess, int rounds, int maxwarriorlen, int minsep, int fixpos, int *win1, int *win2, int *equal)
 {
 	u32_t i, seed;
 	warriorNames_t* currWarrior;
 	warrior_struct** warriors;
 
 	/* setup mars */
-	mars_t* mars = init2(w1, w2, coresize, cycles, maxprocess, rounds, maxwarriorlen);
-	mars->fixedPosition = fixpos;
+	mars_t* mars = init2(w1, w2, coresize, cycles, maxprocess, rounds, maxwarriorlen, minsep);
+    if (fixpos != -1) {
+	    mars->fixedPosition = fixpos;
+    }
 
 	/* load warriors into pmars data structure */
 	currWarrior = mars->warriorNames;
@@ -3290,15 +3292,17 @@ void Fight2Warriors(char* w1, char* w2, int coresize, int cycles, int maxprocess
 	FREE(warriors);
 }
 
-void Fight1Warrior(char* w1, int coresize, int cycles, int maxprocess, int rounds, int maxwarriorlen, int fixpos, int *win1, int *win2, int *equal)
+void Fight1Warrior(char* w1, int coresize, int cycles, int maxprocess, int rounds, int maxwarriorlen, int minsep, int fixpos, int *win1, int *win2, int *equal)
 {
 	u32_t i, seed;
 	warriorNames_t* currWarrior;
 	warrior_struct** warriors;
 
 	/* setup mars */
-	mars_t* mars = init1(w1, coresize, cycles, maxprocess, rounds, maxwarriorlen);
-	mars->fixedPosition = fixpos;
+	mars_t* mars = init1(w1, coresize, cycles, maxprocess, rounds, maxwarriorlen, minsep);
+    if (fixpos != -1) {
+	    mars->fixedPosition = fixpos;
+    }
 
 	/* load warriors into pmars data structure */
 	currWarrior = mars->warriorNames;

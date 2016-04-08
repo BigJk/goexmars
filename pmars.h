@@ -41,8 +41,8 @@ void to_upper(char *);
 
 
 int assemble_warrior2(mars_t* mars, char* redstr, warrior_struct* w);
-void Fight2Warriors(char*, char*, int, int, int, int, int, int, int*, int*, int*);
-void Fight1Warrior(char*, int, int, int, int, int, int, int*, int*, int*);
+void Fight2Warriors(char*, char*, int, int, int, int, int, int, int, int*, int*, int*);
+void Fight1Warrior(char*, int, int, int, int, int, int, int, int*, int*, int*);
 
 /* ****************** required local prototypes ********************* */
 
