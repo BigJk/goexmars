@@ -114,6 +114,40 @@ END
 	}
 }
 
+func TestValidateValidWarrior(t *testing.T) {
+	configureTestLibraryPath(t)
+
+	const imp = `
+;redcode-94
+;name Imp
+MOV 0, 1
+END
+`
+
+	if err := Validate(imp, DefaultConfig); err != nil {
+		t.Fatalf("expected valid warrior, got error: %v", err)
+	}
+}
+
+func TestValidateMalformedWarrior(t *testing.T) {
+	configureTestLibraryPath(t)
+
+	const malformed = `
+;redcode-94
+;name Broken
+MOV.Z 0, 1
+END
+`
+
+	err := Validate(malformed, DefaultConfig)
+	if err == nil {
+		t.Fatalf("expected malformed warrior to fail validation")
+	}
+	if !strings.Contains(err.Error(), "Missing 'modifier'") {
+		t.Fatalf("expected validation error to contain parse diagnostics, got: %v", err)
+	}
+}
+
 func TestFightThreeWarriorsRoundsSum(t *testing.T) {
 	configureTestLibraryPath(t)
 

@@ -65,6 +65,27 @@ func (r FightResult) Failed() bool {
 	return false
 }
 
+// Validate performs a quick validity check for a single warrior.
+//
+// It runs a single-round self-fight and returns a non-nil error when exmars
+// reports an assembly/setup failure. The returned error message is the captured
+// diagnostics string when available.
+func Validate(warrior string, cfg FightConfig) error {
+	cfg.Rounds = 1
+	cfg.Cycles = 1
+	result, err := Fight([]string{warrior}, cfg)
+	if err != nil {
+		return err
+	}
+	if result.Failed() {
+		if result.Diagnostics != "" {
+			return errors.New(result.Diagnostics)
+		}
+		return errors.New("warrior validation failed")
+	}
+	return nil
+}
+
 // Fight runs a fight for 1 to 6 warriors and returns the fight result.
 //
 // On parser/setup failure, the returned FightResult contains sentinel values
