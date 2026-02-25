@@ -250,6 +250,9 @@ typedef struct mars_st {
     int errorcode;
     int errorlevel;
     char errmsg[MAXALLCHAR];
+    char *diagbuf;
+    u32_t diaglen;
+    u32_t diagcap;
 
     /* Some parameters */
     int taskNum;

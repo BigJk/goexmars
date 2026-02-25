@@ -109,8 +109,13 @@ void sim_free_bufs(void* m)
 		free(mars->warriors[i].code);
 	}
 	warriorNames_t* currWarrior = mars->warriorNames;
-	free(currWarrior->next);
+	while (currWarrior) {
+		warriorNames_t* next = currWarrior->next;
+		free(currWarrior);
+		currWarrior = next;
+	}
 	free(mars->errkeep);
+	free(mars->diagbuf);
 	free(mars->coreMem);
 	free(mars->deaths);
 	free(mars->positions);
@@ -121,7 +126,6 @@ void sim_free_bufs(void* m)
 	free(mars->startPositions);
 	free(mars->warriors);
 	free(mars->warTab);
-	free(mars->warriorNames);
 	free(mars);
 }
 

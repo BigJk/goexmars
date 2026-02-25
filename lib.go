@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"sync"
+	"unsafe"
 
 	"github.com/ebitengine/purego"
 )
@@ -16,8 +17,12 @@ var (
 	loadOnce sync.Once
 	loadErr  error
 
-	fight1Warrior  func(string, int32, int32, int32, int32, int32, int32, int32, int32, *int32, *int32, *int32)
-	fight2Warriors func(string, string, int32, int32, int32, int32, int32, int32, int32, int32, *int32, *int32, *int32)
+	fight1 func(string, unsafe.Pointer, unsafe.Pointer, int32, *int32, unsafe.Pointer, int32, *int32)
+	fight2 func(string, string, unsafe.Pointer, unsafe.Pointer, int32, *int32, unsafe.Pointer, int32, *int32)
+	fight3 func(string, string, string, unsafe.Pointer, unsafe.Pointer, int32, *int32, unsafe.Pointer, int32, *int32)
+	fight4 func(string, string, string, string, unsafe.Pointer, unsafe.Pointer, int32, *int32, unsafe.Pointer, int32, *int32)
+	fight5 func(string, string, string, string, string, unsafe.Pointer, unsafe.Pointer, int32, *int32, unsafe.Pointer, int32, *int32)
+	fight6 func(string, string, string, string, string, string, unsafe.Pointer, unsafe.Pointer, int32, *int32, unsafe.Pointer, int32, *int32)
 )
 
 func loadLibrary() error {
@@ -34,8 +39,12 @@ func loadLibrary() error {
 			return
 		}
 
-		purego.RegisterLibFunc(&fight1Warrior, handle, "Fight1Warrior")
-		purego.RegisterLibFunc(&fight2Warriors, handle, "Fight2Warriors")
+		purego.RegisterLibFunc(&fight1, handle, "fight_1")
+		purego.RegisterLibFunc(&fight2, handle, "fight_2")
+		purego.RegisterLibFunc(&fight3, handle, "fight_3")
+		purego.RegisterLibFunc(&fight4, handle, "fight_4")
+		purego.RegisterLibFunc(&fight5, handle, "fight_5")
+		purego.RegisterLibFunc(&fight6, handle, "fight_6")
 	})
 
 	return loadErr

@@ -41,8 +41,22 @@ void to_upper(char *);
 
 
 int assemble_warrior2(mars_t* mars, char* redstr, warrior_struct* w);
-void Fight2Warriors(char*, char*, int, int, int, int, int, int, int, int, int*, int*, int*);
-void Fight1Warrior(char*, int, int, int, int, int, int, int, int, int*, int*, int*);
+typedef struct goexmars_fight_cfg_st {
+	int coresize;
+	int cycles;
+	int maxprocess;
+	int rounds;
+	int maxwarriorlen;
+	int minsep;
+	int pspacesize;
+	int fixpos;
+} goexmars_fight_cfg_t;
+void fight_1(char*, goexmars_fight_cfg_t*, int*, int, int*, char*, int, int*);
+void fight_2(char*, char*, goexmars_fight_cfg_t*, int*, int, int*, char*, int, int*);
+void fight_3(char*, char*, char*, goexmars_fight_cfg_t*, int*, int, int*, char*, int, int*);
+void fight_4(char*, char*, char*, char*, goexmars_fight_cfg_t*, int*, int, int*, char*, int, int*);
+void fight_5(char*, char*, char*, char*, char*, goexmars_fight_cfg_t*, int*, int, int*, char*, int, int*);
+void fight_6(char*, char*, char*, char*, char*, char*, goexmars_fight_cfg_t*, int*, int, int*, char*, int, int*);
 
 /* ****************** required local prototypes ********************* */
 
