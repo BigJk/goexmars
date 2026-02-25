@@ -148,6 +148,68 @@ END
 	}
 }
 
+func TestAssembleValidWarrior(t *testing.T) {
+	configureTestLibraryPath(t)
+
+	const imp = `
+;redcode-94x
+;name Four Winds
+;author John Metcalf
+;strategy oneshot
+
+     step  equ 694
+     diff  equ 5
+
+sc:  sub   inc,            ptr
+ptr: sne.b >step*4+diff,   >step*4
+     djn.f sc,             <ptr
+
+inc: spl   #-step,         <-step-1
+     mov   @bptr,          >ptr
+     mov   @bptr,          >ptr
+bptr:djn.f -2,             {clr
+
+     dat   -5,             8
+clr: spl   #-101,          16
+
+     end   ptr
+
+`
+
+	out, err := Assemble(imp, DefaultConfig)
+	if err != nil {
+		t.Fatalf("expected Assemble to succeed, got error: %v", err)
+	}
+	if out == "" {
+		t.Fatalf("expected assembled output, got empty string")
+	}
+	if !strings.Contains(out, "MOV.") {
+		t.Fatalf("expected normalized instruction output, got:\n%s", out)
+	}
+}
+
+func TestAssembleMalformedWarrior(t *testing.T) {
+	configureTestLibraryPath(t)
+
+	const malformed = `
+;redcode-94
+;name Broken
+MOV.Z 0, 1
+END
+`
+
+	out, err := Assemble(malformed, DefaultConfig)
+	if err == nil {
+		t.Fatalf("expected Assemble to fail for malformed warrior")
+	}
+	if out != "" {
+		t.Fatalf("expected no assembled output on failure, got:\n%s", out)
+	}
+	if !strings.Contains(err.Error(), "Missing 'modifier'") {
+		t.Fatalf("expected assembly error to contain diagnostics, got: %v", err)
+	}
+}
+
 func TestFightThreeWarriorsRoundsSum(t *testing.T) {
 	configureTestLibraryPath(t)
 
@@ -259,7 +321,6 @@ END
 		}
 	}
 }
-
 
 func configureTestLibraryPath(tb testing.TB) {
 	tb.Helper()

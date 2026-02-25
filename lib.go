@@ -23,6 +23,7 @@ var (
 	fight4 func(string, string, string, string, unsafe.Pointer, unsafe.Pointer, int32, *int32, unsafe.Pointer, int32, *int32)
 	fight5 func(string, string, string, string, string, unsafe.Pointer, unsafe.Pointer, int32, *int32, unsafe.Pointer, int32, *int32)
 	fight6 func(string, string, string, string, string, string, unsafe.Pointer, unsafe.Pointer, int32, *int32, unsafe.Pointer, int32, *int32)
+	assemble1 func(string, unsafe.Pointer, unsafe.Pointer, int32, *int32, unsafe.Pointer, int32, *int32) int32
 )
 
 func loadLibrary() error {
@@ -45,6 +46,7 @@ func loadLibrary() error {
 		purego.RegisterLibFunc(&fight4, handle, "fight_4")
 		purego.RegisterLibFunc(&fight5, handle, "fight_5")
 		purego.RegisterLibFunc(&fight6, handle, "fight_6")
+		purego.RegisterLibFunc(&assemble1, handle, "assemble_1")
 	})
 
 	return loadErr
@@ -52,6 +54,9 @@ func loadLibrary() error {
 
 func exmarsLibraryPath() (string, error) {
 	if p := os.Getenv(exmarsLibraryPathEnv); p != "" {
+		if info, err := os.Stat(p); err == nil && info.IsDir() {
+			return filepath.Join(p, exmarsLibraryName()), nil
+		}
 		return p, nil
 	}
 

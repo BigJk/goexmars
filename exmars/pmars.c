@@ -3366,6 +3366,84 @@ static void fight_n_warriors_detailed(char** ws, int nWarriors, int coresize, in
 	fight_warriors_detailed_common(mars, wins, winsLen, ties, diagBuf, diagCap, diagLen);
 }
 
+static void append_text_buf(char* dst, int cap, int* ioLen, const char* src)
+{
+	int len;
+	int n;
+
+	if (ioLen == NULL || src == NULL)
+		return;
+	len = *ioLen;
+	n = (int)strlen(src);
+	if (len < 0)
+		len = 0;
+
+	if (dst != NULL && cap > 0 && len < cap - 1) {
+		int copy = n;
+		if (copy > (cap - 1 - len))
+			copy = cap - 1 - len;
+		if (copy > 0)
+			memcpy(dst + len, src, (size_t)copy);
+		dst[len + copy] = '\0';
+	}
+
+	*ioLen = len + n;
+}
+
+int assemble_1(char* w1, goexmars_fight_cfg_t* cfg, char* outBuf, int outCap, int* outLen, char* diagBuf, int diagCap, int* diagLen)
+{
+	char* ws[1] = { w1 };
+	mars_t* mars;
+	warrior_struct** warriors;
+	warrior_struct* w;
+	int i;
+	int textLen = 0;
+	int rc = -1;
+
+	if (outLen != NULL)
+		*outLen = 0;
+	if (outBuf != NULL && outCap > 0)
+		outBuf[0] = '\0';
+
+	mars = initN(ws, 1, cfg->coresize, cfg->cycles, cfg->maxprocess, 1, cfg->maxwarriorlen, cfg->minsep, cfg->pspacesize);
+	if (cfg->fixpos != -1)
+		mars->fixedPosition = cfg->fixpos;
+
+	warriors = (warrior_struct**)malloc(sizeof(warrior_struct*));
+	if (warriors == NULL) {
+		mars_diag_copy_out(mars, diagBuf, diagCap, diagLen);
+		sim_free_bufs(mars);
+		return -1;
+	}
+	warriors[0] = NULL;
+
+	w = (warrior_struct*)MALLOC(sizeof(warrior_struct));
+	warriors[0] = w;
+	memset(w, 0, sizeof(warrior_struct));
+
+	if (assemble_warrior2(mars, w1, w)) {
+		mars_diag_copy_out(mars, diagBuf, diagCap, diagLen);
+		free_fight_warriors(mars, warriors);
+		sim_free_bufs(mars);
+		return -1;
+	}
+
+	for (i = 0; i < w->instLen; ++i) {
+		char linebuf[MAXALLCHAR];
+		append_text_buf(outBuf, outCap, &textLen, cellview(mars, w->instBank + i, linebuf));
+		append_text_buf(outBuf, outCap, &textLen, "\n");
+	}
+	if (outLen != NULL)
+		*outLen = textLen;
+
+	mars_diag_copy_out(mars, diagBuf, diagCap, diagLen);
+	rc = 0;
+
+	free_fight_warriors(mars, warriors);
+	sim_free_bufs(mars);
+	return rc;
+}
+
 void fight_1(char* w1, goexmars_fight_cfg_t* cfg, int* wins, int winsLen, int* ties, char* diagBuf, int diagCap, int* diagLen)
 {
 	char* ws[1] = { w1 };

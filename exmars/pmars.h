@@ -57,6 +57,7 @@ void fight_3(char*, char*, char*, goexmars_fight_cfg_t*, int*, int, int*, char*,
 void fight_4(char*, char*, char*, char*, goexmars_fight_cfg_t*, int*, int, int*, char*, int, int*);
 void fight_5(char*, char*, char*, char*, char*, goexmars_fight_cfg_t*, int*, int, int*, char*, int, int*);
 void fight_6(char*, char*, char*, char*, char*, char*, goexmars_fight_cfg_t*, int*, int, int*, char*, int, int*);
+int assemble_1(char*, goexmars_fight_cfg_t*, char*, int, int*, char*, int, int*);
 
 /* ****************** required local prototypes ********************* */
 

@@ -3,14 +3,14 @@ package goexmars
 // FightConfig holds the simulation parameters for a fight.
 // It supports fluent configuration via SetXxx chainable methods.
 type FightConfig struct {
-	CoreSize      int
-	Cycles        int
-	MaxProcess    int
-	Rounds        int
-	MaxWarriorLen int
-	MinSep        int
-	PSpaceSize    int
-	FixPos        int
+	CoreSize      int `json:"core_size"`
+	Cycles        int `json:"cycles"`
+	MaxProcess    int `json:"max_process"`
+	Rounds        int `json:"rounds"`
+	MaxWarriorLen int `json:"max_warrior_len"`
+	MinSep        int `json:"min_sep"`
+	PSpaceSize    int `json:"p_space_size"`
+	FixPos        int `json:"fix_pos"`
 }
 
 // NewFightConfig returns an empty config that can be configured fluently.

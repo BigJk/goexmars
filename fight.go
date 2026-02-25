@@ -102,6 +102,45 @@ func Validate(warrior string, cfg FightConfig) error {
 	return nil
 }
 
+// Assemble assembles a single warrior and returns its normalized instruction listing.
+//
+// The returned source is a disassembly of the assembled instructions (not the
+// original source with labels/macros/comments). If exmars reports an assembly
+// failure, Assemble returns an error containing diagnostics when available.
+func Assemble(warrior string, cfg FightConfig) (string, error) {
+	requireLibrary()
+
+	cfg.Rounds = 1
+	cfgC := toCFightCfg(cfg)
+	outBuf := make([]byte, diagnosticsBufferSize)
+	diagBuf := make([]byte, diagnosticsBufferSize)
+	var outLen int32
+	var diagLen int32
+
+	rc := assemble1(
+		warrior,
+		unsafe.Pointer(&cfgC),
+		unsafe.Pointer(&outBuf[0]), int32(len(outBuf)), &outLen,
+		unsafe.Pointer(&diagBuf[0]), int32(len(diagBuf)), &diagLen,
+	)
+
+	diag := diagnosticsString(diagBuf, diagLen)
+	if rc != 0 {
+		if diag != "" {
+			return "", errors.New(diag)
+		}
+		return "", errors.New("assembly failed")
+	}
+
+	if outLen > int32(len(outBuf)-1) {
+		outLen = int32(len(outBuf) - 1)
+	}
+	if outLen < 0 {
+		outLen = 0
+	}
+	return string(outBuf[:outLen]), nil
+}
+
 // FightNamed runs a fight for 1 to 6 named warriors.
 //
 // Warrior map keys are used as stable identifiers for result lookup. Internally

@@ -110,6 +110,38 @@ END
 }
 ```
 
+### Assemble
+
+```go
+package main
+
+import (
+	"fmt"
+
+	"github.com/BigJk/goexmars"
+)
+
+func main() {
+	warrior := `
+;redcode-94
+;name Example
+step  DAT #0, #0
+start MOV step, >step
+      JMP start
+END start
+`
+
+	assembled, err := goexmars.Assemble(warrior, goexmars.DefaultConfig)
+	if err != nil {
+		fmt.Printf("assemble failed:\n%s\n", err)
+		return
+	}
+
+	fmt.Println("normalized redcode:")
+	fmt.Println(assembled)
+}
+```
+
 ### Shared Library
 
 You need the shared library to run the code. You can build it yourself or download it from the releases page. It needs to be placed in the `./lib` directory relative to the executable, or define the `GOEXMARS_LIB_PATH` environment variable to point to the shared library.
