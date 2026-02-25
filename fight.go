@@ -42,12 +42,17 @@ func diagnosticsString(buf []byte, diagLen int32) string {
 	return string(buf[:diagLen])
 }
 
+// FightResult contains the outcome of a fight.
 type FightResult struct {
-	Wins        []int
-	Ties        int
+	// Wins contains the sole-win count for each warrior in the input order.
+	Wins []int
+	// Ties contains rounds without a sole winner.
+	Ties int
+	// Diagnostics contains exmars warnings/errors captured during assembly/fight setup.
 	Diagnostics string
 }
 
+// Failed reports whether the result encodes a sentinel failure from the C layer.
 func (r FightResult) Failed() bool {
 	if r.Ties < 0 {
 		return true
@@ -60,9 +65,10 @@ func (r FightResult) Failed() bool {
 	return false
 }
 
-// Fight runs a fight for 1..6 warriors.
-// Wins contains sole-win counts per warrior. Ties counts rounds without a sole winner.
-// Diagnostics contains exmars parser/runtime diagnostics when available.
+// Fight runs a fight for 1 to 6 warriors and returns the fight result.
+//
+// On parser/setup failure, the returned FightResult contains sentinel values
+// (negative wins/ties) and error is set to the diagnostics string when available.
 func Fight(warriors []string, cfg FightConfig) (FightResult, error) {
 	requireLibrary()
 

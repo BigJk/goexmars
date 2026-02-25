@@ -1,5 +1,6 @@
 package goexmars
 
+// DefaultConfig is the standard corewar configuration preset.
 var DefaultConfig = FightConfig{
 	Rounds:        250,
 	CoreSize:      8000,
@@ -11,6 +12,7 @@ var DefaultConfig = FightConfig{
 	FixPos:        0,
 }
 
+// FortressConfig is the fortress configuration preset.
 // Not fully supported: source preset uses Write limit = 4000 (CoreSize = 8000).
 var FortressConfig = FightConfig{
 	Rounds:        1000,
@@ -23,6 +25,7 @@ var FortressConfig = FightConfig{
 	FixPos:        0,
 }
 
+// TourneyConfig is the tourney configuration preset.
 var TourneyConfig = FightConfig{
 	Rounds:        250,
 	CoreSize:      8192,
@@ -34,6 +37,7 @@ var TourneyConfig = FightConfig{
 	FixPos:        0,
 }
 
+// LimitedProcessConfig is the limited-process configuration preset.
 var LimitedProcessConfig = FightConfig{
 	Rounds:        250,
 	CoreSize:      8000,
@@ -45,6 +49,7 @@ var LimitedProcessConfig = FightConfig{
 	FixPos:        0,
 }
 
+// MediumProcessConfig is the medium-process configuration preset.
 var MediumProcessConfig = FightConfig{
 	Rounds:        250,
 	CoreSize:      8000,
@@ -56,6 +61,7 @@ var MediumProcessConfig = FightConfig{
 	FixPos:        0,
 }
 
+// MetaswitchConfig is the metaswitch configuration preset.
 var MetaswitchConfig = FightConfig{
 	Rounds:        100,
 	CoreSize:      8000,
@@ -67,6 +73,7 @@ var MetaswitchConfig = FightConfig{
 	FixPos:        0,
 }
 
+// NanoConfig is the nano hill configuration preset.
 var NanoConfig = FightConfig{
 	Rounds:        250,
 	CoreSize:      80,
@@ -78,6 +85,7 @@ var NanoConfig = FightConfig{
 	FixPos:        0,
 }
 
+// TinyConfig is the tiny hill configuration preset.
 var TinyConfig = FightConfig{
 	Rounds:        250,
 	CoreSize:      800,
@@ -89,6 +97,7 @@ var TinyConfig = FightConfig{
 	FixPos:        0,
 }
 
+// TinyLimitedProcessConfig is the tiny limited-process configuration preset.
 var TinyLimitedProcessConfig = FightConfig{
 	Rounds:        250,
 	CoreSize:      800,
