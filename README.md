@@ -4,6 +4,8 @@ exMars binding for go. This uses the [purego](https://github.com/ebitengine/pure
 
 ## Usage
 
+### Fight
+
 ```go
 package main
 
@@ -43,6 +45,68 @@ func main() {
 	if result.Diagnostics != "" {
 		fmt.Printf("diagnostics:\n%s\n", result.Diagnostics)
 	}
+}
+```
+
+### Validate
+
+```go
+package main
+
+import (
+	"fmt"
+
+	"github.com/BigJk/goexmars"
+)
+
+func main() {
+	warrior := `
+;redcode-94
+;name Broken
+MOV.Z 0, 1
+END
+`
+
+	if err := goexmars.Validate(warrior, goexmars.DefaultConfig); err != nil {
+		fmt.Printf("invalid warrior:\n%s\n", err)
+		return
+	}
+
+	fmt.Println("warrior is valid")
+}
+```
+
+### FightNamed
+
+```go
+package main
+
+import (
+	"fmt"
+
+	"github.com/BigJk/goexmars"
+)
+
+func main() {
+	imp := `
+;redcode-94
+;name Imp
+MOV 0, 1
+END
+`
+
+	result, err := goexmars.FightNamed(map[string]string{
+		"alpha": imp,
+		"beta":  imp,
+		"gamma": imp,
+	}, goexmars.DefaultConfig.SetRounds(10))
+	if err != nil {
+		fmt.Println("fight error:", err)
+	}
+
+	alphaWins, ties := result.Get("alpha")
+	fmt.Printf("alpha wins=%d ties=%d\n", alphaWins, ties)
+	fmt.Printf("all wins=%v\n", result.Wins)
 }
 ```
 

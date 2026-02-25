@@ -3,6 +3,7 @@ package goexmars
 import (
 	"errors"
 	"fmt"
+	"sort"
 	"unsafe"
 )
 
@@ -52,6 +53,22 @@ type FightResult struct {
 	Diagnostics string
 }
 
+// FightNamedResult is a FightResult with name-based lookup helpers.
+type FightNamedResult struct {
+	FightResult
+	index map[string]int
+}
+
+// Get returns the sole-win count for name and the shared tie count.
+//
+// If name is unknown, Get returns 0 and the tie count.
+func (r FightNamedResult) Get(name string) (int, int) {
+	if i, ok := r.index[name]; ok && i >= 0 && i < len(r.Wins) {
+		return r.Wins[i], r.Ties
+	}
+	return 0, r.Ties
+}
+
 // Failed reports whether the result encodes a sentinel failure from the C layer.
 func (r FightResult) Failed() bool {
 	if r.Ties < 0 {
@@ -72,7 +89,6 @@ func (r FightResult) Failed() bool {
 // diagnostics string when available.
 func Validate(warrior string, cfg FightConfig) error {
 	cfg.Rounds = 1
-	cfg.Cycles = 1
 	result, err := Fight([]string{warrior}, cfg)
 	if err != nil {
 		return err
@@ -84,6 +100,33 @@ func Validate(warrior string, cfg FightConfig) error {
 		return errors.New("warrior validation failed")
 	}
 	return nil
+}
+
+// FightNamed runs a fight for 1 to 6 named warriors.
+//
+// Warrior map keys are used as stable identifiers for result lookup. Internally
+// names are sorted to make evaluation order deterministic. Use result.Get(name)
+// to map a warrior name back to its sole-win count and the shared tie count.
+func FightNamed(warriors map[string]string, cfg FightConfig) (FightNamedResult, error) {
+	if len(warriors) < 1 || len(warriors) > 6 {
+		return FightNamedResult{}, fmt.Errorf("FightNamed supports 1 to 6 warriors, got %d", len(warriors))
+	}
+
+	names := make([]string, 0, len(warriors))
+	for name := range warriors {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+
+	sources := make([]string, len(names))
+	index := make(map[string]int, len(names))
+	for i, name := range names {
+		sources[i] = warriors[name]
+		index[name] = i
+	}
+
+	result, err := Fight(sources, cfg)
+	return FightNamedResult{FightResult: result, index: index}, err
 }
 
 // Fight runs a fight for 1 to 6 warriors and returns the fight result.

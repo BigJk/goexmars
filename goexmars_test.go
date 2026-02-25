@@ -185,6 +185,46 @@ END
 	}
 }
 
+func TestFightNamedGet(t *testing.T) {
+	configureTestLibraryPath(t)
+
+	const imp = `
+;redcode-94
+;name Imp
+MOV 0, 1
+END
+`
+
+	cfg := FightConfig{
+		CoreSize:      8000,
+		Cycles:        80000,
+		MaxProcess:    8000,
+		Rounds:        3,
+		MaxWarriorLen: 100,
+		MinSep:        100,
+		FixPos:        0,
+	}
+
+	result, err := FightNamed(map[string]string{
+		"alpha": imp,
+		"beta":  imp,
+		"gamma": imp,
+	}, cfg)
+	if err != nil {
+		t.Fatalf("FightNamed returned unexpected error: %v", err)
+	}
+
+	wa, ta := result.Get("alpha")
+	wb, tb := result.Get("beta")
+	wg, tg := result.Get("gamma")
+	if ta != result.Ties || tb != result.Ties || tg != result.Ties {
+		t.Fatalf("expected Get ties to match result ties, got %d/%d/%d want %d", ta, tb, tg, result.Ties)
+	}
+	if wa+wb+wg+result.Ties != cfg.Rounds {
+		t.Fatalf("unexpected total rounds from named results: %d", wa+wb+wg+result.Ties)
+	}
+}
+
 func BenchmarkFightTwoImps(b *testing.B) {
 	configureTestLibraryPath(b)
 
