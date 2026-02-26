@@ -26,25 +26,44 @@ jobs:
           - os: macos-14
             target: darwin-arm64
             lib_name: libexmars.dylib
+          - os: windows-latest
+            target: windows-amd64
+            lib_name: exmars.dll
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Build shared library
+        if: runner.os != 'Windows'
         working-directory: exmars
         run: |
           mkdir -p ../lib
           OUT_DIR=. ./build.sh
 
-      - name: Package lib folder
-        shell: bash
+      - name: Setup MSYS2 (Windows)
+        if: runner.os == 'Windows'
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: mingw-w64-x86_64-gcc
+
+      - name: Build shared library (Windows)
+        if: runner.os == 'Windows'
+        shell: msys2 {0}
+        working-directory: exmars
         run: |
-          set -euo pipefail
-          STAGE="dist/${{ matrix.target }}/lib"
-          mkdir -p "$STAGE"
-          cp "lib/${{ matrix.lib_name }}" "$STAGE/"
-          (cd "dist/${{ matrix.target }}" && zip -r "../../goexmars-${{ matrix.target }}.zip" lib)
+          mkdir -p ../lib
+          CC=gcc OUT_DIR=. ./build.sh
+
+      - name: Package lib folder
+        shell: pwsh
+        run: |
+          $stage = "dist/${{ matrix.target }}/lib"
+          New-Item -ItemType Directory -Force -Path $stage | Out-Null
+          Copy-Item "lib/${{ matrix.lib_name }}" $stage
+          Compress-Archive -Path "dist/${{ matrix.target }}/lib" -DestinationPath "dist/goexmars-${{ matrix.target }}.zip" -Force
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4

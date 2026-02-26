@@ -1,6 +1,13 @@
 # goexmars
 
-exMars binding for go. This uses the [purego](https://github.com/ebitengine/purego) package to call the shared library, without any cgo.
+exMars binding for go. This uses the [purego](https://github.com/ebitengine/purego) package to call the shared library, without any cgo. It also includes other goodies like go structs for the parsed warriors and similarity helpers.
+
+### Features
+
+- `Fight`/`FightNamed` support 1 to 6 warriors for fights.
+- `Assemble` returns normalized assembled Redcode (labels/macros/comments are not preserved) as string.
+- `AssembleParsed` parses commands from normalized Redcode and reads `;name`, `;author`, and numeric `END` from the original source.
+- `Similarity` helper to compute similarity between two warriors `[0,1]`.
 
 ## Usage
 
@@ -128,7 +135,7 @@ func main() {
 step  DAT #0, #0
 start MOV step, >step
       JMP start
-END start
+END 0
 `
 
 	assembled, err := goexmars.Assemble(warrior, goexmars.DefaultConfig)
@@ -138,7 +145,43 @@ END start
 	}
 
 	fmt.Println("normalized redcode:")
-	fmt.Println(assembled)
+fmt.Println(assembled)
+}
+```
+
+### AssembleParsed
+
+```go
+package main
+
+import (
+	"fmt"
+
+	"github.com/BigJk/goexmars"
+)
+
+func main() {
+	warrior := `
+;redcode-94
+;name Example
+;author You
+start MOV 0, 1
+END 0
+`
+
+	parsed, err := goexmars.AssembleParsed(warrior, goexmars.DefaultConfig)
+	if err != nil {
+		fmt.Println("assemble/parse error:", err)
+		return
+	}
+
+	fmt.Printf("name=%q author=%q end=%d\n", parsed.Name, parsed.Author, parsed.End)
+	for _, cmd := range parsed.Commands {
+		fmt.Println(cmd.String())
+	}
+
+	// Re-render back to normalized redcode (+ parsed metadata)
+	fmt.Println(parsed.String())
 }
 ```
 

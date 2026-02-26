@@ -117,8 +117,8 @@ func (w ParsedWarrior) String() string {
 
 // AssembleParsed assembles warrior and parses the normalized result into a Go struct.
 //
-// Name, Author, and End are parsed from the original source if present.
-// Commands are parsed from the normalized assembled Redcode returned by Assemble.
+// Name and Author are parsed from the original source if present.
+// End and Commands are parsed from the normalized assembled Redcode returned by Assemble.
 func AssembleParsed(warrior string, cfg FightConfig) (ParsedWarrior, error) {
 	assembled, err := Assemble(warrior, cfg)
 	if err != nil {
@@ -128,10 +128,11 @@ func AssembleParsed(warrior string, cfg FightConfig) (ParsedWarrior, error) {
 	if err != nil {
 		return ParsedWarrior{}, err
 	}
-	name, author, end, err := parseWarriorMetadata(warrior)
+	end, err := parseAssembledEnd(assembled)
 	if err != nil {
 		return ParsedWarrior{}, err
 	}
+	name, author := parseWarriorMetadata(warrior)
 	return ParsedWarrior{
 		Name:      name,
 		Author:    author,
@@ -148,6 +149,9 @@ func ParseAssembledCommands(assembled string) ([]Command, error) {
 	for i, raw := range lines {
 		line := strings.TrimSpace(raw)
 		if line == "" {
+			continue
+		}
+		if strings.HasPrefix(strings.ToUpper(line), "END") {
 			continue
 		}
 		cmd, err := parseAssembledLine(line)
@@ -390,7 +394,26 @@ func (m AddressingMode) String() string {
 	}
 }
 
-func parseWarriorMetadata(src string) (name string, author string, end int, err error) {
+func parseAssembledEnd(assembled string) (int, error) {
+	for _, raw := range strings.Split(assembled, "\n") {
+		line := strings.TrimSpace(raw)
+		if !strings.HasPrefix(strings.ToUpper(line), "END") {
+			continue
+		}
+		parts := strings.Fields(line)
+		if len(parts) < 2 {
+			return 0, fmt.Errorf("assembled END line missing value")
+		}
+		v, err := strconv.Atoi(parts[1])
+		if err != nil {
+			return 0, fmt.Errorf("parse assembled END value %q: %w", parts[1], err)
+		}
+		return v, nil
+	}
+	return 0, fmt.Errorf("assembled END line not found")
+}
+
+func parseWarriorMetadata(src string) (name string, author string) {
 	for _, raw := range strings.Split(src, "\n") {
 		line := strings.TrimSpace(raw)
 		if line == "" {
@@ -406,16 +429,8 @@ func parseWarriorMetadata(src string) (name string, author string, end int, err 
 			continue
 		}
 		if strings.HasPrefix(strings.ToUpper(line), "END") {
-			parts := strings.Fields(line)
-			if len(parts) > 1 {
-				end, err = strconv.Atoi(parts[1])
-				if err != nil {
-					return "", "", 0, fmt.Errorf("parse END value %q: %w", parts[1], err)
-				}
-			} else {
-				end = 0
-			}
+			continue
 		}
 	}
-	return name, author, end, nil
+	return name, author
 }

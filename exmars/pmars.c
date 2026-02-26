@@ -3433,6 +3433,11 @@ int assemble_1(char* w1, goexmars_fight_cfg_t* cfg, char* outBuf, int outCap, in
 		append_text_buf(outBuf, outCap, &textLen, cellview(mars, w->instBank + i, linebuf));
 		append_text_buf(outBuf, outCap, &textLen, "\n");
 	}
+	{
+		char endbuf[64];
+		sprintf(endbuf, "END %d\n", (int)w->offset);
+		append_text_buf(outBuf, outCap, &textLen, endbuf);
+	}
 	if (outLen != NULL)
 		*outLen = textLen;
 

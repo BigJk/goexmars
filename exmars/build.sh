@@ -19,6 +19,12 @@ Linux)
     -o "$OUT_LIB" \
     pmars.c sim.c pspace.c
   ;;
+MINGW*|MSYS*|CYGWIN*)
+  OUT_LIB="$OUT_DIR/../lib/exmars.dll"
+  "$CC" -O2 -shared -Wl,--export-all-symbols \
+    -o "$OUT_LIB" \
+    pmars.c sim.c pspace.c
+  ;;
 *)
   echo "unsupported platform: $(uname -s)" >&2
   exit 1
