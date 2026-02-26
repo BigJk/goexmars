@@ -32,6 +32,9 @@ const (
 	OpCodeNOP
 )
 
+// OpCodeCount is the number of supported opcodes.
+const OpCodeCount = int(OpCodeNOP) + 1
+
 // Modifier is a Redcode instruction modifier.
 type Modifier byte
 
@@ -45,6 +48,9 @@ const (
 	ModifierX
 	ModifierI
 )
+
+// ModifierCount is the number of supported modifiers.
+const ModifierCount = int(ModifierI) + 1
 
 // AddressingMode is a Redcode operand addressing mode.
 type AddressingMode byte
@@ -60,6 +66,9 @@ const (
 	AddressingAIndirectPost
 	AddressingBIndirectPost
 )
+
+// AddressingModeCount is the number of supported addressing modes.
+const AddressingModeCount = int(AddressingBIndirectPost) + 1
 
 // Command is a single normalized Redcode instruction.
 type Command struct {
