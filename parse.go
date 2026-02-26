@@ -93,15 +93,36 @@ type ParsedWarrior struct {
 	Assembled string
 }
 
+// RedcodeFormatOptions controls how a ParsedWarrior is rendered back to Redcode text.
+type RedcodeFormatOptions struct {
+	IncludeName   bool
+	IncludeAuthor bool
+	IncludeEnd    bool
+}
+
+// DefaultRedcodeFormatOptions returns the default Redcode rendering options.
+func DefaultRedcodeFormatOptions() RedcodeFormatOptions {
+	return RedcodeFormatOptions{
+		IncludeName:   true,
+		IncludeAuthor: true,
+		IncludeEnd:    true,
+	}
+}
+
 // String renders the parsed warrior back to Redcode text.
 func (w ParsedWarrior) String() string {
+	return w.Format(DefaultRedcodeFormatOptions())
+}
+
+// Format renders the parsed warrior to Redcode text using the provided options.
+func (w ParsedWarrior) Format(opts RedcodeFormatOptions) string {
 	var b strings.Builder
-	if w.Name != "" {
+	if opts.IncludeName && w.Name != "" {
 		b.WriteString(";name ")
 		b.WriteString(w.Name)
 		b.WriteByte('\n')
 	}
-	if w.Author != "" {
+	if opts.IncludeAuthor && w.Author != "" {
 		b.WriteString(";author ")
 		b.WriteString(w.Author)
 		b.WriteByte('\n')
@@ -110,8 +131,10 @@ func (w ParsedWarrior) String() string {
 		b.WriteString(cmd.String())
 		b.WriteByte('\n')
 	}
-	b.WriteString("END ")
-	b.WriteString(strconv.Itoa(w.End))
+	if opts.IncludeEnd {
+		b.WriteString("END ")
+		b.WriteString(strconv.Itoa(w.End))
+	}
 	return b.String()
 }
 

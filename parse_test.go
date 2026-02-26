@@ -164,3 +164,71 @@ func TestParsedWarriorString(t *testing.T) {
 		t.Fatalf("expected END line in parsed warrior string, got:\n%s", out)
 	}
 }
+
+func TestParsedWarriorFormatOptions(t *testing.T) {
+	pw := ParsedWarrior{
+		Name:   "Example",
+		Author: "Tester",
+		End:    3,
+		Commands: []Command{
+			{OpCode: OpCodeDAT, Modifier: ModifierF, AddressingModeA: AddressingImmediate, A: 0, AddressingModeB: AddressingImmediate, B: 0},
+		},
+	}
+
+	out := pw.Format(RedcodeFormatOptions{
+		IncludeName:   false,
+		IncludeAuthor: false,
+		IncludeEnd:    false,
+	})
+	if strings.Contains(out, ";name") || strings.Contains(out, ";author") || strings.Contains(out, "END ") {
+		t.Fatalf("unexpected metadata/end in formatted output: %q", out)
+	}
+	if !strings.Contains(out, "DAT.F #0, #0") {
+		t.Fatalf("expected command in formatted output, got %q", out)
+	}
+}
+
+func TestAssembleNormalizedOptions(t *testing.T) {
+	configureTestLibraryPath(t)
+
+	const warrior = `
+;redcode-94
+;name Example
+;author Test Author
+MOV 0, 1
+END 0
+`
+	out, err := AssembleNormalized(warrior, DefaultConfig, RedcodeFormatOptions{
+		IncludeName:   false,
+		IncludeAuthor: false,
+		IncludeEnd:    false,
+	})
+	if err != nil {
+		t.Fatalf("AssembleNormalized returned error: %v", err)
+	}
+	if strings.Contains(out, ";name") || strings.Contains(out, ";author") || strings.Contains(out, "END ") {
+		t.Fatalf("expected output without metadata/end, got:\n%s", out)
+	}
+}
+
+func TestParsedWarriorFingerprint(t *testing.T) {
+	a := ParsedWarrior{
+		Name:   "One",
+		Author: "A",
+		End:    0,
+		Commands: []Command{
+			{OpCode: OpCodeMOV, Modifier: ModifierI, AddressingModeA: AddressingDirect, A: 0, AddressingModeB: AddressingDirect, B: 1},
+		},
+	}
+	b := a
+	b.Name = "Two"
+	b.Author = "B"
+
+	if a.Fingerprint() != b.Fingerprint() {
+		t.Fatalf("expected default fingerprint to ignore metadata")
+	}
+	if a.FingerprintWithOptions(FingerprintOptions{IncludeName: true, IncludeAuthor: true, IncludeEnd: true}) ==
+		b.FingerprintWithOptions(FingerprintOptions{IncludeName: true, IncludeAuthor: true, IncludeEnd: true}) {
+		t.Fatalf("expected metadata-inclusive fingerprint to differ")
+	}
+}

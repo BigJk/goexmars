@@ -111,6 +111,9 @@ func Assemble(warrior string, cfg FightConfig) (string, error) {
 	requireLibrary()
 
 	cfg.Rounds = 1
+	if err := cfg.Validate(); err != nil {
+		return "", err
+	}
 	cfgC := toCFightCfg(cfg)
 	outBuf := make([]byte, diagnosticsBufferSize)
 	diagBuf := make([]byte, diagnosticsBufferSize)
@@ -177,6 +180,9 @@ func Fight(warriors []string, cfg FightConfig) (FightResult, error) {
 
 	if len(warriors) < 1 || len(warriors) > 6 {
 		return FightResult{}, fmt.Errorf("Fight supports 1 to 6 warriors, got %d", len(warriors))
+	}
+	if err := cfg.Validate(); err != nil {
+		return FightResult{}, err
 	}
 
 	cfgC := toCFightCfg(cfg)
