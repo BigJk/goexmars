@@ -4,10 +4,11 @@ exMars binding for go. This uses the [purego](https://github.com/ebitengine/pure
 
 ### Features
 
-- `Fight`/`FightNamed` support 1 to 6 warriors for fights.
+- `Fight`/`FightNamed` support 1 to 6 warriors for fighting.
 - `Assemble` returns normalized assembled Redcode (labels/macros/comments are not preserved) as string.
 - `AssembleParsed` parses commands from normalized Redcode and reads `;name`, `;author`, and numeric `END` from the original source.
 - `Similarity` helper to compute similarity between two warriors `[0,1]`.
+- ...
 
 ## Usage
 
@@ -24,6 +25,14 @@ import (
 )
 
 func main() {
+	// Download the shared library if it's not already present
+	// Important: This will download the latest release asset for the current OS/arch from GitHub.
+	//            If you don't trust this you can build or download the shared library yourself and
+	//            place it in the ./lib directory relative to the executable.
+	if err := goexmars.DownloadLib(); err != nil {
+		log.Fatalf("download shared library: %v", err)
+	}
+
 	imp := `
         ;redcode-94
         ;name Imp
@@ -68,10 +77,10 @@ import (
 
 func main() {
 	warrior := `
-;redcode-94
-;name Broken
-MOV.Z 0, 1
-END
+		;redcode-94
+		;name Broken
+		MOV.Z 0, 1
+		END
 `
 
 	if err := goexmars.Validate(warrior, goexmars.DefaultConfig); err != nil {
@@ -96,10 +105,10 @@ import (
 
 func main() {
 	imp := `
-;redcode-94
-;name Imp
-MOV 0, 1
-END
+		;redcode-94
+		;name Imp
+		MOV 0, 1
+		END
 `
 
 	result, err := goexmars.FightNamed(map[string]string{
@@ -130,12 +139,12 @@ import (
 
 func main() {
 	warrior := `
-;redcode-94
-;name Example
-step  DAT #0, #0
-start MOV step, >step
-      JMP start
-END 0
+		;redcode-94
+		;name Example
+		step  DAT #0, #0
+		start MOV step, >step
+			JMP start
+		END 0
 `
 
 	assembled, err := goexmars.Assemble(warrior, goexmars.DefaultConfig)
@@ -162,11 +171,11 @@ import (
 
 func main() {
 	warrior := `
-;redcode-94
-;name Example
-;author You
-start MOV 0, 1
-END 0
+		;redcode-94
+		;name Example
+		;author You
+		start MOV 0, 1
+		END 0
 `
 
 	parsed, err := goexmars.AssembleParsed(warrior, goexmars.DefaultConfig)
