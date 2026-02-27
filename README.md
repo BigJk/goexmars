@@ -1,10 +1,14 @@
 # goexmars
 
-exMars binding for go. This uses the [purego](https://github.com/ebitengine/purego) package to call the shared library, without any cgo. It also includes other goodies like go structs for the parsed warriors and similarity helpers.
+[![Go Reference](https://pkg.go.dev/badge/github.com/BigJk/goexmars.svg)](https://pkg.go.dev/github.com/BigJk/goexmars)
+
+exMars binding for go. This uses the [purego](https://github.com/ebitengine/purego) package to call the shared library, without any CGO. It also includes other goodies like go structs for the parsed warriors and similarity helpers.
+
+**This allows very fast simulation of CoreWar without needing to use CGO or a slow MARS written in Go.**
 
 ### Features
 
-- `Fight`/`FightNamed` support 1 to 6 warriors for fighting.
+- `Fight`/`FightNamed` support 1 to 6 warriors for fighting. Can be called concurrently.
 - `Assemble` returns normalized assembled Redcode (labels/macros/comments are not preserved) as string.
 - `AssembleParsed` parses commands from normalized Redcode and reads `;name`, `;author`, and numeric `END` from the original source.
 - `Similarity` helper to compute similarity between two warriors `[0,1]`.
