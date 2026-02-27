@@ -109,8 +109,13 @@ void sim_free_bufs(void* m)
 		free(mars->warriors[i].code);
 	}
 	warriorNames_t* currWarrior = mars->warriorNames;
-	free(currWarrior->next);
+	while (currWarrior) {
+		warriorNames_t* next = currWarrior->next;
+		free(currWarrior);
+		currWarrior = next;
+	}
 	free(mars->errkeep);
+	free(mars->diagbuf);
 	free(mars->coreMem);
 	free(mars->deaths);
 	free(mars->positions);
@@ -121,7 +126,6 @@ void sim_free_bufs(void* m)
 	free(mars->startPositions);
 	free(mars->warriors);
 	free(mars->warTab);
-	free(mars->warriorNames);
 	free(mars);
 }
 
@@ -143,8 +147,10 @@ int sim_alloc_bufs(mars_t* mars) {
 	mars->deaths = (u32_t*)malloc(sizeof(unsigned int)*mars->nWarriors);
 	mars->results = (u32_t*)malloc(sizeof(u32_t)*mars->nWarriors*(mars->nWarriors+1));
 
-	mars->pspaceSize = mars->coresize/16;
-	if (mars->pspaceSize <= 0) mars->pspaceSize = 1;
+	if (mars->pspaceSize <= 0) {
+		mars->pspaceSize = mars->coresize/16;
+		if (mars->pspaceSize <= 0) mars->pspaceSize = 1;
+	}
 
 	mars->coreMem = (insn_t*)malloc(sizeof(insn_t) * mars->coresize);
 	mars->queueMem = (insn_t**)malloc(sizeof(insn_t*)*(mars->nWarriors * mars->processes + 1));

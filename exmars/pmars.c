@@ -1063,10 +1063,73 @@ char  *str;
 
 
 /* stst && wangsawm v0.4.0: output for different displays */
+static void mars_diag_reset(mars_t* mars)
+{
+	if (mars == NULL)
+		return;
+	mars->diaglen = 0;
+	if (mars->diagbuf)
+		mars->diagbuf[0] = '\0';
+}
+
+static void mars_diag_append(mars_t* mars, const char* str)
+{
+	size_t n;
+	size_t need;
+	size_t newcap;
+	char *buf;
+
+	if (mars == NULL || str == NULL)
+		return;
+	n = strlen(str);
+	if (n == 0)
+		return;
+
+	need = (size_t)mars->diaglen + n + 1;
+	if (need > mars->diagcap) {
+		newcap = mars->diagcap ? mars->diagcap : 256;
+		while (newcap < need)
+			newcap *= 2;
+		buf = (char*)realloc(mars->diagbuf, newcap);
+		if (buf == NULL)
+			return;
+		mars->diagbuf = buf;
+		mars->diagcap = (u32_t)newcap;
+	}
+
+	memcpy(mars->diagbuf + mars->diaglen, str, n);
+	mars->diaglen += (u32_t)n;
+	mars->diagbuf[mars->diaglen] = '\0';
+}
+
+static void mars_diag_copy_out(mars_t* mars, char* buf, int cap, int* outLen)
+{
+	int n = 0;
+	int copy = 0;
+
+	if (mars != NULL)
+		n = (int)mars->diaglen;
+	if (outLen != NULL)
+		*outLen = n;
+
+	if (buf == NULL || cap <= 0)
+		return;
+
+	copy = n;
+	if (copy > cap - 1)
+		copy = cap - 1;
+	if (copy < 0)
+		copy = 0;
+	if (copy > 0 && mars != NULL && mars->diagbuf != NULL)
+		memcpy(buf, mars->diagbuf, (size_t)copy);
+	buf[copy] = '\0';
+}
+
 static void
 textout(char* str)
 {
-	fprintf(stderr, "%s", str);
+	(void)str;
+	/* intentionally suppressed: diagnostics are returned to the caller */
 }
 
 /* ******************************************************************* */
@@ -1222,10 +1285,13 @@ errprn(mars_t* mars, errType code, line_st* aline, const char* arg)
 
 		if (i == mars->ierr) {
 			sprintf(mars->outs, "%s", mars->errorlevel == WARNING ? warning : error);
+			mars_diag_append(mars, mars->outs);
 			textout(mars->outs);
 			sprintf(mars->outs, inLine, aline->linesrc->loc, aline->linesrc->src);
+			mars_diag_append(mars, mars->outs);
 			textout(mars->outs);
 			sprintf(mars->outs, "				%s\n", abuf);
+			mars_diag_append(mars, mars->outs);
 			textout(mars->outs);
 			mars->errkeep[mars->ierr].num = 1;
 			mars->errkeep[mars->ierr].loc = aline->linesrc->loc;
@@ -1236,13 +1302,16 @@ errprn(mars_t* mars, errType code, line_st* aline, const char* arg)
 		sprintf(mars->outs, "%s:\n",
 		        mars->errorlevel == WARNING ? warning : error);
 
+		mars_diag_append(mars, mars->outs);
 		textout(mars->outs);
 		sprintf(mars->outs, "				%s\n", abuf);
+		mars_diag_append(mars, mars->outs);
 		textout(mars->outs);
 	}
 
 	if (mars->ierr >= ERRMAX) {
 		sprintf(mars->outs, "%s", tooManyMsgErr);
+		mars_diag_append(mars, mars->outs);
 		textout(mars->outs);
 		exit(PARSEERR);
 	}
@@ -2245,6 +2314,7 @@ int assemble_warrior(mars_t* mars, char* fName, warrior_struct* w)
 	mars->errorcode = SUCCESS;
 	*(mars->errmsg) = '\0';
 	mars->errnum = mars->warnum = 0;
+	mars_diag_reset(mars);
 
 	mars->pass = 0;
 
@@ -2408,19 +2478,23 @@ int assemble_warrior(mars_t* mars, char* fName, warrior_struct* w)
 		}
 		if (mars->errnum) {
 			sprintf(mars->outs, errNumMsg, mars->errnum);
+			mars_diag_append(mars, mars->outs);
 			textout(mars->outs);
 		}
 		if (mars->warnum) {
 			sprintf(mars->outs, warNumMsg, mars->warnum);
+			mars_diag_append(mars, mars->outs);
 			textout(mars->outs);
 		}
 		while (mars->ierr)
 			if (mars->errkeep[--(mars->ierr)].num > 1) {
 				sprintf(mars->outs, duplicateMsg, mars->errkeep[mars->ierr].loc, mars->errkeep[mars->ierr].num);
+				mars_diag_append(mars, mars->outs);
 				textout(mars->outs);
 			}
 		if (mars->errnum + mars->warnum) {
 			sprintf(mars->outs, "\n");
+			mars_diag_append(mars, mars->outs);
 			textout(mars->outs);
 		}
 	} else
@@ -3034,40 +3108,38 @@ void readargs(int argc, char** argv, mars_t* mars) {
 		usage();
 }
 
-void readargs2(char* w1, char* w2, mars_t* mars) {
+void readargsN(char** warriors, int nWarriors, mars_t* mars) {
 	warriorNames_t* currWarrior = NULL;
+	int i;
 
 	mars->warriorNames = NULL;
 	mars->nWarriors = 0;
 
-	//first
-	mars->nWarriors++;
-	mars->warriorNames = (warriorNames_t*)malloc(sizeof(warriorNames_t));
-	currWarrior = mars->warriorNames;
-
-	currWarrior->warriorName = w1;
-	currWarrior->next = NULL;
-
-	//second
-	mars->nWarriors++;
-	currWarrior->next = (warriorNames_t*)malloc(sizeof(warriorNames_t));
-	currWarrior = currWarrior->next;
-	currWarrior->warriorName = w2;
-	currWarrior->next = NULL;
+	for (i = 0; i < nWarriors; ++i) {
+		mars->nWarriors++;
+		if (mars->warriorNames == NULL) {
+			mars->warriorNames = (warriorNames_t*)malloc(sizeof(warriorNames_t));
+			currWarrior = mars->warriorNames;
+		} else {
+			currWarrior->next = (warriorNames_t*)malloc(sizeof(warriorNames_t));
+			currWarrior = currWarrior->next;
+		}
+		currWarrior->warriorName = warriors[i];
+		currWarrior->next = NULL;
+	}
 }
 
 void readargs1(char* w1, mars_t* mars) {
-	warriorNames_t* currWarrior = NULL;
+	char* warriors[1];
+	warriors[0] = w1;
+	readargsN(warriors, 1, mars);
+}
 
-	mars->warriorNames = NULL;
-	mars->nWarriors = 0;
-
-	mars->nWarriors++;
-	mars->warriorNames = (warriorNames_t*)malloc(sizeof(warriorNames_t));
-	currWarrior = mars->warriorNames;
-
-	currWarrior->warriorName = w1;
-	currWarrior->next = NULL;
+void readargs2(char* w1, char* w2, mars_t* mars) {
+	char* warriors[2];
+	warriors[0] = w1;
+	warriors[1] = w2;
+	readargsN(warriors, 2, mars);
 }
 
 
@@ -3097,7 +3169,7 @@ mars_t* init(int argc, char** argv) {
 	return mars;
 }
 
-mars_t* init2(char* w1, char* w2, int coresize, int cycles, int maxprocess, int rounds, int maxwarriorlen, int minsep) {
+mars_t* initN(char** warriors, int nWarriors, int coresize, int cycles, int maxprocess, int rounds, int maxwarriorlen, int minsep, int pspacesize) {
 	mars_t* mars = 0;
 	mars = (mars_t*)malloc(sizeof(mars_t));
 	memset(mars, 0, sizeof(mars_t));
@@ -3108,40 +3180,15 @@ mars_t* init2(char* w1, char* w2, int coresize, int cycles, int maxprocess, int 
 	mars->maxWarriorLength = maxwarriorlen;
 	mars->seed = rng((s32_t)time(0)*0x1d872b41);
 	mars->minsep = minsep;
-	mars->nWarriors = 2;
+	mars->pspaceSize = pspacesize;
+	mars->nWarriors = nWarriors;
 	/* pmars */
 	mars->errorcode = SUCCESS;
 	mars->errorlevel = WARNING;
 	mars->saveOper = 0;
 	mars->errmsg[0] = '\0';                                                          /* reserve for future */
 
-	readargs2(w1, w2, mars);
-	if (!sim_alloc_bufs(mars)) {
-		printf("memory alloc failed.\n");
-		exit(1);
-	}
-	return mars;
-}
-
-mars_t* init1(char* w1, int coresize, int cycles, int maxprocess, int rounds, int maxwarriorlen, int minsep) {
-	mars_t* mars = 0;
-	mars = (mars_t*)malloc(sizeof(mars_t));
-	memset(mars, 0, sizeof(mars_t));
-	mars->rounds = rounds;
-	mars->cycles = cycles;
-	mars->coresize = coresize;
-	mars->processes = maxprocess;
-	mars->maxWarriorLength = maxwarriorlen;
-	mars->seed = rng((s32_t)time(0)*0x1d872b41);
-	mars->minsep = minsep;
-	mars->nWarriors = 1;
-	/* pmars */
-	mars->errorcode = SUCCESS;
-	mars->errorlevel = WARNING;
-	mars->saveOper = 0;
-	mars->errmsg[0] = '\0';                                                          /* reserve for future */
-
-	readargs1(w1, mars);
+	readargsN(warriors, nWarriors, mars);
 	if (!sim_alloc_bufs(mars)) {
 		printf("memory alloc failed.\n");
 		exit(1);
@@ -3202,111 +3249,48 @@ void pmars2exhaust(mars_t* mars, warrior_struct** warriors, int wCount)
 	}
 }
 
-void Fight2Warriors(char* w1, char* w2, int coresize, int cycles, int maxprocess, int rounds, int maxwarriorlen, int minsep, int fixpos, int *win1, int *win2, int *equal)
+static void free_fight_warriors(mars_t* mars, warrior_struct** warriors)
 {
-	u32_t i, seed;
-	warriorNames_t* currWarrior;
-	warrior_struct** warriors;
+	u32_t i;
 
-	/* setup mars */
-	mars_t* mars = init2(w1, w2, coresize, cycles, maxprocess, rounds, maxwarriorlen, minsep);
-    if (fixpos != -1) {
-	    mars->fixedPosition = fixpos;
-    }
-
-	/* load warriors into pmars data structure */
-	currWarrior = mars->warriorNames;
-	warriors = (warrior_struct**)malloc(sizeof(warrior_struct*)*mars->nWarriors);
-	i = 0;
-	while (currWarrior != NULL)
-	{
-		warrior_struct* w = (warrior_struct*)MALLOC(sizeof(warrior_struct));
-		warriors[i] = w;
-
-		memset(w, 0, sizeof(warrior_struct));
-		if (assemble_warrior2(mars, currWarrior->warriorName, w)) {
-			/* error !! */
-			*win1 = -1;
-			*win2 = -1;
-			*equal = -1;
-			return;
-		}
-		currWarrior = currWarrior->next;
-		++i;
-	}
-
-	/*	convert warriors */
-	pmars2exhaust(mars, warriors, mars->nWarriors);
-
-
-	/* fight! */
-
-	check_sanity(mars);
-	clear_results(mars);
-
-	if (mars->fixedPosition) {
-		seed = mars->fixedPosition - mars->minsep;
-	} else {
-		seed = rng(mars->seed);
-	}
-
-	save_pspaces(mars);
-	amalgamate_pspaces(mars);                                                         /* Share P-spaces with equal PINs */
-
-	/* fight rounds rounds. */
-	for (i = 0; i < mars->rounds; ++i) {
-		int nalive;
-		sim_clear_core(mars);
-
-		seed = compute_positions(seed, mars);
-		load_warriors(mars);
-		set_starting_order(i, mars);
-
-		nalive = sim_mw(mars, mars->startPositions, mars->deaths);
-		if (nalive<0)
-			panic("simulator panic!\n");
-
-		accumulate_results(mars);
-	}
-	mars->seed = seed;
-
-	/* output results */
-
-	*win1 = mars->results[0*(mars->nWarriors+1) + 1];
-	*equal = mars->results[0*(mars->nWarriors+1) + 2];
-	*win2 = mars->results[1*(mars->nWarriors+1) + 1];
-
-	/* free ALL the things!*/
-	/* http://i.imgur.com/EzoOrol.jpg */
+	if (warriors == NULL)
+		return;
 
 	for(i = 0; i < mars->nWarriors; i++) {
-		warrior_struct w = *warriors[i];
-		free(w.instBank);
-		free(w.name);
-		free(w.authorName);
-		free(w.date);
-		free(w.version);
-		free(warriors[i]);
+		if (warriors[i] != NULL) {
+			warrior_struct w = *warriors[i];
+			free(w.instBank);
+			free(w.name);
+			free(w.authorName);
+			free(w.date);
+			free(w.version);
+			free(warriors[i]);
+		}
 	}
-	sim_free_bufs(mars);
 	FREE(warriors);
 }
 
-void Fight1Warrior(char* w1, int coresize, int cycles, int maxprocess, int rounds, int maxwarriorlen, int minsep, int fixpos, int *win1, int *win2, int *equal)
+static void fight_warriors_detailed_common(mars_t* mars, int *wins, int winsLen, int *ties, char* diagBuf, int diagCap, int* diagLen)
 {
 	u32_t i, seed;
 	warriorNames_t* currWarrior;
 	warrior_struct** warriors;
+	int j;
+	int totalWins = 0;
 
-	/* setup mars */
-	mars_t* mars = init1(w1, coresize, cycles, maxprocess, rounds, maxwarriorlen, minsep);
-    if (fixpos != -1) {
-	    mars->fixedPosition = fixpos;
-    }
-
-	/* load warriors into pmars data structure */
 	currWarrior = mars->warriorNames;
 	warriors = (warrior_struct**)malloc(sizeof(warrior_struct*)*mars->nWarriors);
+	if (warriors == NULL) {
+		if (winsLen > 0) {
+			for (j = 0; j < winsLen; ++j) wins[j] = -1;
+		}
+		if (ties) *ties = -1;
+		mars_diag_copy_out(mars, diagBuf, diagCap, diagLen);
+		sim_free_bufs(mars);
+		return;
+	}
+	memset(warriors, 0, sizeof(warrior_struct*)*mars->nWarriors);
+
 	i = 0;
 	while (currWarrior != NULL)
 	{
@@ -3315,21 +3299,20 @@ void Fight1Warrior(char* w1, int coresize, int cycles, int maxprocess, int round
 
 		memset(w, 0, sizeof(warrior_struct));
 		if (assemble_warrior2(mars, currWarrior->warriorName, w)) {
-			/* error !! */
-			*win1 = -1;
-			*win2 = -1;
-			*equal = -1;
+			if (winsLen > 0) {
+				for (j = 0; j < winsLen; ++j) wins[j] = -1;
+			}
+			if (ties) *ties = -1;
+			mars_diag_copy_out(mars, diagBuf, diagCap, diagLen);
+			free_fight_warriors(mars, warriors);
+			sim_free_bufs(mars);
 			return;
 		}
 		currWarrior = currWarrior->next;
 		++i;
 	}
 
-	/*	convert warriors */
 	pmars2exhaust(mars, warriors, mars->nWarriors);
-
-
-	/* fight! */
 
 	check_sanity(mars);
 	clear_results(mars);
@@ -3341,9 +3324,8 @@ void Fight1Warrior(char* w1, int coresize, int cycles, int maxprocess, int round
 	}
 
 	save_pspaces(mars);
-	amalgamate_pspaces(mars);                                                         /* Share P-spaces with equal PINs */
+	amalgamate_pspaces(mars);
 
-	/* fight rounds rounds. */
 	for (i = 0; i < mars->rounds; ++i) {
 		int nalive;
 		sim_clear_core(mars);
@@ -3360,24 +3342,145 @@ void Fight1Warrior(char* w1, int coresize, int cycles, int maxprocess, int round
 	}
 	mars->seed = seed;
 
-	/* output results */
-
-	*win1 = mars->results[0*(mars->nWarriors+1) + 1];
-	*equal = mars->results[0*(mars->nWarriors+1) + 0];
-	*win2 = 0;
-
-	/* free ALL the things!*/
-	/* http://i.imgur.com/EzoOrol.jpg */
-
-	for(i = 0; i < mars->nWarriors; i++) {
-		warrior_struct w = *warriors[i];
-		free(w.instBank);
-		free(w.name);
-		free(w.authorName);
-		free(w.date);
-		free(w.version);
-		free(warriors[i]);
+	for (j = 0; j < winsLen; ++j) {
+		if (j < (int)mars->nWarriors) {
+			wins[j] = (int)mars->results[j*(mars->nWarriors+1) + 1];
+			totalWins += wins[j];
+		} else {
+			wins[j] = 0;
+		}
 	}
+	if (ties) *ties = (int)mars->rounds - totalWins;
+	mars_diag_copy_out(mars, diagBuf, diagCap, diagLen);
+
+	free_fight_warriors(mars, warriors);
 	sim_free_bufs(mars);
-	FREE(warriors);
+}
+
+static void fight_n_warriors_detailed(char** ws, int nWarriors, int coresize, int cycles, int maxprocess, int rounds, int maxwarriorlen, int minsep, int pspacesize, int fixpos, int* wins, int winsLen, int* ties, char* diagBuf, int diagCap, int* diagLen)
+{
+	mars_t* mars = initN(ws, nWarriors, coresize, cycles, maxprocess, rounds, maxwarriorlen, minsep, pspacesize);
+	if (fixpos != -1) {
+		mars->fixedPosition = fixpos;
+	}
+	fight_warriors_detailed_common(mars, wins, winsLen, ties, diagBuf, diagCap, diagLen);
+}
+
+static void append_text_buf(char* dst, int cap, int* ioLen, const char* src)
+{
+	int len;
+	int n;
+
+	if (ioLen == NULL || src == NULL)
+		return;
+	len = *ioLen;
+	n = (int)strlen(src);
+	if (len < 0)
+		len = 0;
+
+	if (dst != NULL && cap > 0 && len < cap - 1) {
+		int copy = n;
+		if (copy > (cap - 1 - len))
+			copy = cap - 1 - len;
+		if (copy > 0)
+			memcpy(dst + len, src, (size_t)copy);
+		dst[len + copy] = '\0';
+	}
+
+	*ioLen = len + n;
+}
+
+int assemble_1(char* w1, goexmars_fight_cfg_t* cfg, char* outBuf, int outCap, int* outLen, char* diagBuf, int diagCap, int* diagLen)
+{
+	char* ws[1] = { w1 };
+	mars_t* mars;
+	warrior_struct** warriors;
+	warrior_struct* w;
+	int i;
+	int textLen = 0;
+	int rc = -1;
+
+	if (outLen != NULL)
+		*outLen = 0;
+	if (outBuf != NULL && outCap > 0)
+		outBuf[0] = '\0';
+
+	mars = initN(ws, 1, cfg->coresize, cfg->cycles, cfg->maxprocess, 1, cfg->maxwarriorlen, cfg->minsep, cfg->pspacesize);
+	if (cfg->fixpos != -1)
+		mars->fixedPosition = cfg->fixpos;
+
+	warriors = (warrior_struct**)malloc(sizeof(warrior_struct*));
+	if (warriors == NULL) {
+		mars_diag_copy_out(mars, diagBuf, diagCap, diagLen);
+		sim_free_bufs(mars);
+		return -1;
+	}
+	warriors[0] = NULL;
+
+	w = (warrior_struct*)MALLOC(sizeof(warrior_struct));
+	warriors[0] = w;
+	memset(w, 0, sizeof(warrior_struct));
+
+	if (assemble_warrior2(mars, w1, w)) {
+		mars_diag_copy_out(mars, diagBuf, diagCap, diagLen);
+		free_fight_warriors(mars, warriors);
+		sim_free_bufs(mars);
+		return -1;
+	}
+
+	for (i = 0; i < w->instLen; ++i) {
+		char linebuf[MAXALLCHAR];
+		append_text_buf(outBuf, outCap, &textLen, cellview(mars, w->instBank + i, linebuf));
+		append_text_buf(outBuf, outCap, &textLen, "\n");
+	}
+	{
+		char endbuf[64];
+		sprintf(endbuf, "END %d\n", (int)w->offset);
+		append_text_buf(outBuf, outCap, &textLen, endbuf);
+	}
+	if (outLen != NULL)
+		*outLen = textLen;
+
+	mars_diag_copy_out(mars, diagBuf, diagCap, diagLen);
+	rc = 0;
+
+	free_fight_warriors(mars, warriors);
+	sim_free_bufs(mars);
+	return rc;
+}
+
+void fight_1(char* w1, goexmars_fight_cfg_t* cfg, int* wins, int winsLen, int* ties, char* diagBuf, int diagCap, int* diagLen)
+{
+	char* ws[1] = { w1 };
+	fight_n_warriors_detailed(ws, 1, cfg->coresize, cfg->cycles, cfg->maxprocess, cfg->rounds, cfg->maxwarriorlen, cfg->minsep, cfg->pspacesize, cfg->fixpos, wins, winsLen, ties, diagBuf, diagCap, diagLen);
+}
+
+void fight_2(char* w1, char* w2, goexmars_fight_cfg_t* cfg, int* wins, int winsLen, int* ties, char* diagBuf, int diagCap, int* diagLen)
+{
+	char* ws[2] = { w1, w2 };
+	fight_n_warriors_detailed(ws, 2, cfg->coresize, cfg->cycles, cfg->maxprocess, cfg->rounds, cfg->maxwarriorlen, cfg->minsep, cfg->pspacesize, cfg->fixpos, wins, winsLen, ties, diagBuf, diagCap, diagLen);
+}
+
+void fight_3(char* w1, char* w2, char* w3, goexmars_fight_cfg_t* cfg, int* wins, int winsLen, int* ties, char* diagBuf, int diagCap, int* diagLen)
+{
+	char* ws[3] = { w1, w2, w3 };
+	fight_n_warriors_detailed(ws, 3, cfg->coresize, cfg->cycles, cfg->maxprocess, cfg->rounds, cfg->maxwarriorlen, cfg->minsep, cfg->pspacesize, cfg->fixpos, wins, winsLen, ties, diagBuf, diagCap, diagLen);
+}
+
+void fight_4(char* w1, char* w2, char* w3, char* w4, goexmars_fight_cfg_t* cfg, int* wins, int winsLen, int* ties, char* diagBuf, int diagCap, int* diagLen)
+{
+	char* ws[4] = { w1, w2, w3, w4 };
+	fight_n_warriors_detailed(ws, 4, cfg->coresize, cfg->cycles, cfg->maxprocess, cfg->rounds, cfg->maxwarriorlen, cfg->minsep, cfg->pspacesize, cfg->fixpos, wins, winsLen, ties, diagBuf, diagCap, diagLen);
+}
+
+void fight_5(char* w1, char* w2, char* w3, char* w4, char* w5, goexmars_fight_cfg_t* cfg, int* wins, int winsLen, int* ties, char* diagBuf, int diagCap, int* diagLen)
+{
+	char* ws[5] = { w1, w2, w3, w4, w5 };
+	fight_n_warriors_detailed(ws, 5, cfg->coresize, cfg->cycles, cfg->maxprocess, cfg->rounds, cfg->maxwarriorlen, cfg->minsep, cfg->pspacesize, cfg->fixpos, wins, winsLen, ties, diagBuf, diagCap, diagLen);
+}
+
+void fight_6(char* w1, char* w2, char* w3, char* w4, char* w5, char* w6, goexmars_fight_cfg_t* cfg, int* wins, int winsLen, int* ties, char* diagBuf, int diagCap, int* diagLen)
+{
+	char* ws[6] = { w1, w2, w3, w4, w5, w6 };
+	fight_n_warriors_detailed(ws, 6, cfg->coresize, cfg->cycles, cfg->maxprocess, cfg->rounds, cfg->maxwarriorlen, cfg->minsep, cfg->pspacesize, cfg->fixpos, wins, winsLen, ties, diagBuf, diagCap, diagLen);
 }
